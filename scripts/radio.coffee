@@ -21,40 +21,50 @@ stop = ->
     nowPlaying.kill()
 
 play = (track) ->
+  stop()
   nowPlaying = spawn('mplayer', [track])
 
 volume = (level) ->
   level = level % 10
   if os == 'darwin'
-    exec("osascript -e 'set volume #{level}'")
+    exec("osascript -e 'set volume #{level}'", ->)
   else
-    volume = [-10239,-3000,-2790,-1790,-1126,-662,-450,-200,0,100,400]
-    exec("amixer cset numid=3 #{volume[level]}")
+    volumes = [-10239,-3000,-2790,-1790,-1126,-662,-450,-200,0,100,400]
+    exec("amixer cset numid=1 -- #{volumes[level]}", ->)
 
 getTrack = (number) ->
   defaultStn = "FrenchKissFM"
-  i = 0
-  for name, stream of STATIONS
-    if number && number == i
-      [name, stream]
+  if number
+    number = parseInt(number, 10)
+    i = 0
+    for name, stream of STATIONS
+      if number && number == i
+        return [name, stream]
       i++
-    else
-      [defaultStn, STATIONS[defaultStn]]
+    [defaultStn, STATIONS[defaultStn]]
+  else
+    [defaultStn, STATIONS[defaultStn]]
 
 module.exports = (robot) ->
   robot.respond /play\s?(.*)?/i, (msg) ->
     if t = msg.match[1]
-      name, stream = getTrack(t)
+      [name, stream] = getTrack(t)
+      msg.send("Playing #{name}")
       play(stream)
     else
-      name, stream = getTrack()
+      [name, stream] = getTrack()
+      msg.send("Playing #{name}")
       play(stream)
 
   robot.respond /vol(ume)? ([0-9]{1,2})/i, (msg) ->
     volume(msg.match[2])
+    console.log "Setting volume to msg.match[2]"
+    msg.send("Volume changed")
 
   robot.respond /mute/i, (msg) ->
+    console.log "Muting audio"
     volume(0)
+    msg.send("Muted")
 
   robot.respond /stop/i, (msg) ->
     stop()
