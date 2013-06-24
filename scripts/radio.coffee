@@ -1,14 +1,17 @@
 {exec, spawn} = require 'child_process'
 os = require('os').platform()
+request = require 'request'
+pls = require 'pls'
 
+# http://www.listenlive.eu/uk.html
 STATIONS = {
   "FrenchKissFM": "http://stream.frenchkissfm.com:80"
-  , "Radio DEEA":"http://178.157.81.147:8090"
-  , "Chill": "http://205.164.62.20:8010"
-  , "BBC 1xtra": "http://bbcmedia.ic.llnwd.net/stream/bbcmedia_intl_lc_1xtra_q"
-  , "BBC World Service News":"http://bbcwssc.ic.llnwd.net/stream/bbcwssc_mp1_ws-einws"
-  , "NPR": "http://npr.ic.llnwd.net/stream/npr_live24"
-  , "WSBRadio": "http://6103.live.streamtheworld.com/WSBAMAAC"
+  , "Radio DEEA":"http://live.radiodeea.ro:8090/listen.pls"
+  , "Chill": "http://yp.shoutcast.com/sbin/tunein-station.pls?id=651101&file=filename.pls"
+  , "BBC 1xtra": "http://www.bbc.co.uk/radio/listen/live/r1x_aaclca.pls"
+  , "BBC World Service News":"http://www.bbc.co.uk/worldservice/meta/tx/nb/live/ennws.pls"
+  , "BBC World Service":"http://www.bbc.co.uk/worldservice/meta/tx/nb/live/eneuk.pls"
+  , "NPR": "http://www.npr.org/streams/mp3/nprlive24.pls"
 }
 
 nowPlaying = false
@@ -22,7 +25,13 @@ stop = ->
 
 play = (track) ->
   stop()
-  nowPlaying = spawn('mplayer', [track])
+  if track.match(/\.pls$/)
+    request.get track, (err, res, body) ->
+      track = pls.parse(body)
+      console.log track
+      nowPlaying = spawn('mplayer', [track[0].uri])
+  else
+    nowPlaying = spawn('mplayer', [track])
 
 volume = (level) ->
   level = level % 10
